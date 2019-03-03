@@ -17,10 +17,14 @@
 ## 思考题
 
 - 你理解的对于类似ucore这样需要进程/虚存/文件系统的操作系统，在硬件设计上至少需要有哪些直接的支持？至少应该提供哪些功能的特权指令？
+  进程的切换需要硬件支持时钟中断，虚存管理需要MMU等硬件支持，同时需要有持久性的存储介质来实现文件系统。对应的特权指令有中断使能、触发软中断等中断相关指令，设置内存寻址模式和页表等内存管理相关的指令，以及执行I/O操作等文件系统相关的指令
 
 - 你理解的x86的实模式和保护模式有什么区别？物理地址、线性地址、逻辑地址的含义分别是什么？
+  实模式只有十六位寻址空间，并且没有内存保护机制，保护模式有32寻址空间，而且提供了内存分页机制，能够隔离不同程序的运行空间。
+  物理地址是处理器提交到总线上用于访问内存和外设的最终地址，逻辑地址是程序在指令中直接使用的地址，线性地址是逻辑地址到物理地址之间转换的中间层，由处理器通过段机制实现。
 
-- 你理解的RV的特权模式有什么区别？不同 模式在地址访问方面有何特征？
+- 你理解的RV的特权模式有什么区别？不同模式在地址访问方面有何特征？
+  对于risc-v不太了解，不好意思。
 
 - 理解list_entry双向链表数据结构及其4个基本操作函数和ucore中一些基于它的代码实现（此题不用填写内容）
 
@@ -39,6 +43,8 @@
     unsigned gd_off_31_16 : 16;        // high bits of offset in segment
  };
 ```
+
+表示这个域的位数。
 
 - 对于如下的代码段，
 
@@ -62,6 +68,7 @@ intr=8;
 SETGATE(intr, 1,2,3,0);
 ```
 请问执行上述指令后， intr的值是多少？
+0x10002
 
 ### 课堂实践练习
 
@@ -79,8 +86,22 @@ SETGATE(intr, 1,2,3,0);
 
   - ##### [[IA-32 Intel Architecture Software Developer's Manuals](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html)]
 
+```assembly
+  # Set up the protected-mode data segment registers
+  movw $PROT_MODE_DSEG, %ax                       # Our data segment selector
+  movw %ax, %ds                                   # -> DS: Data Segment
+  movw %ax, %es                                   # -> ES: Extra Segment
+  movw %ax, %fs                                   # -> FS
+  movw %ax, %gs                                   # -> GS
+  movw %ax, %ss                                   # -> SS: Stack Segment
+  
+  # Set up the stack pointer and call into C. The stack region is from 0--start(0x7c00)
+  movl $0x0, %ebp
+  movl $start, %esp
+  call bootmain
+```
 
-请在rcore中找一段你认为难度适当的RV汇编代码，尝试解释其含义。
+这段汇编代码将实模式的各段寄存器设置好，并设置好栈帧寄存器，最后跳转到bootmain函数中。
 
 #### 练习二
 
